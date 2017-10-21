@@ -38,9 +38,14 @@ Game::~Game()
 	delete baseVertexShader;
 	delete skyVertexShader;
 	delete skyPixelShader;
+	delete tessVertexShader;
+	delete tessHullShader;
+	delete tessDomainShader;
+	delete tessPixelShader;
 
 	delete sphereMesh;
 	delete cubeMesh;
+	delete quadMesh;
 
 	delete materialEarth;
 	delete materialCobbleStone;
@@ -51,9 +56,10 @@ Game::~Game()
 	delete materialEmpty;
 
 	delete skyBoxEntity;
+	delete quadEntity;
 	for(auto& se: sphereEntities) delete se;
 	for (auto& fe : flatEntities) delete fe;
-	
+
 	rasterizer->Release();
 
 	skyDepthState->Release();
@@ -93,7 +99,7 @@ void Game::Init()
 	//Setup rasterizer state 
 	D3D11_RASTERIZER_DESC rasterizerDesc;
 	ZeroMemory(&rasterizerDesc, sizeof(rasterizerDesc));
-	rasterizerDesc.CullMode = D3D11_CULL_FRONT;
+	rasterizerDesc.CullMode = D3D11_CULL_BACK;
 	rasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
 	rasterizerDesc.DepthClipEnable = false;
 
@@ -132,7 +138,7 @@ void Game::Init()
 
 void Game::CameraInitialize()
 {
-	camera = new Camera(0, 0, -4);
+	camera = new Camera(0, 1, -6);
 	camera->UpdateProjectionMatrix((float)width / height);
 }
 
@@ -153,12 +159,29 @@ void Game::ShadersInitialize()
 	skyPixelShader = new SimplePixelShader(device, context);
 	if (!skyPixelShader->LoadShaderFile(L"Debug/SkyBoxPixelShader.cso"))
 		skyPixelShader->LoadShaderFile(L"SkyBoxPixelShader.cso");
+
+	tessVertexShader = new SimpleVertexShader(device, context);
+	if (!tessVertexShader->LoadShaderFile(L"Debug/TessVertexShader.cso"))
+		tessVertexShader->LoadShaderFile(L"TessVertexShader.cso");
+
+	tessHullShader = new SimpleHullShader(device, context);
+	if (!tessHullShader->LoadShaderFile(L"Debug/TessHullShader.cso"))
+		tessHullShader->LoadShaderFile(L"TessHullShader.cso");
+
+	tessDomainShader = new SimpleDomainShader(device, context);
+	if (!tessDomainShader->LoadShaderFile(L"Debug/TessDomainShader.cso"))
+		tessDomainShader->LoadShaderFile(L"TessDomainShader.cso");
+
+	tessPixelShader = new SimplePixelShader(device, context);
+	if (!tessPixelShader->LoadShaderFile(L"Debug/TessPixelShader.cso"))
+		tessPixelShader->LoadShaderFile(L"TessPixelShader.cso");
 }
 
 void Game::ModelsInitialize()
 {
 	sphereMesh = new Mesh("Models/sphere.obj", device);
 	cubeMesh = new Mesh("Models/cube.obj", device);
+	quadMesh = new Mesh("Models/quad.obj", device);
 }
 
 void Game::LoadTextures()
@@ -273,6 +296,10 @@ void Game::GameEntityInitialize()
 	flatEntities[1]->SetRotation(0, 0, -1.6f);
 	flatEntities[2]->SetRotation(1.6f, 0, 0);
 	flatEntities[3]->SetRotation(0, 0, 1.6f);
+
+	quadEntity = new GameEntity(quadMesh, materialCobbleStone);
+	quadEntity->SetPosition(0.0f, 0.0f, 0.0f);
+	quadEntity->SetRotation(-0.8f, 0, 0);
 }
 
 void Game::OnResize()
@@ -290,18 +317,19 @@ void Game::Update(float deltaTime, float totalTime)
 {
 	camera->Update(deltaTime);
 
-	//Update Spheres
-	for (int i = 0; i <= 8; i++)
-	{
-		sphereEntities[i]->UpdateWorldMatrix();
-	}
+	////Update Spheres
+	//for (int i = 0; i <= 8; i++)
+	//{
+	//	sphereEntities[i]->UpdateWorldMatrix();
+	//}
 
-	//Update Flats
-	for (int i = 0; i <= 3; i++)
-	{
-		flatEntities[i]->UpdateWorldMatrix();
-	}
+	////Update Flats
+	//for (int i = 0; i <= 3; i++)
+	//{
+	//	flatEntities[i]->UpdateWorldMatrix();
+	//}
 
+	quadEntity->UpdateWorldMatrix();
 
 	if (GetAsyncKeyState(VK_ESCAPE))
 		Quit();
@@ -320,21 +348,65 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	context->RSSetState(rasterizer);
 
-	//Render Spheres
-	for (int i = 0; i <= 8 ; i++) 
-	{
-		render.RenderProcess(sphereEntities[i], vertexBuffer, indexBuffer, baseVertexShader, basePixelShader, camera, context);
-	}
+	////Render Spheres
+	//for (int i = 0; i <= 8 ; i++) 
+	//{
+	//	render.RenderProcess(sphereEntities[i], vertexBuffer, indexBuffer, baseVertexShader, basePixelShader, camera, context);
+	//}
 
-	//Render Flats
-	for (int i = 0; i <= 3; i++)
-	{
-		render.RenderProcess(flatEntities[i], vertexBuffer, indexBuffer, baseVertexShader, basePixelShader, camera, context);
-	}
+	////Render Flats
+	//for (int i = 0; i <= 3; i++)
+	//{
+	//	render.RenderProcess(flatEntities[i], vertexBuffer, indexBuffer, baseVertexShader, basePixelShader, camera, context);
+	//}
+	//
+	//render.RenderProcess(quadEntity, vertexBuffer, indexBuffer, baseVertexShader, basePixelShader, camera, context);
+	
+
+	dirLight_1.SetLightValues(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, -10.0f, 0.0f), 0.0f);
+	ambientLight.SetLightValues(XMFLOAT4(0.0f, 0.0f, 0.1f, 1.0f));
+
+	UINT stride = sizeof(Vertex);
+	UINT offset = 0;
+
+
+
+	vertexBuffer = quadEntity->GetMesh()->GetVertexBuffer();
+	indexBuffer = quadEntity->GetMesh()->GetIndexBuffer();
+
+	tessVertexShader->SetMatrix4x4("world", *quadEntity->GetWorldMatrix());
+
+	tessVertexShader->CopyAllBufferData();
+	tessVertexShader->SetShader();
+
+	tessHullShader->CopyAllBufferData();
+	tessHullShader->SetShader();
+	
+	tessDomainShader->SetMatrix4x4("view", camera->GetView());
+	tessDomainShader->SetMatrix4x4("projection", camera->GetProjection());
+	
+	tessDomainShader->CopyAllBufferData();
+	tessDomainShader->SetShader();
+	
+	tessPixelShader->SetData("dirLight_1", &dirLight_1, sizeof(DirectionalLight));
+	tessPixelShader->SetFloat3("cameraPosition", camera->GetPosition());
+
+	tessPixelShader->SetShaderResourceView("textureSRV", quadEntity->GetMaterial()->GetMaterialSRV());
+	tessPixelShader->SetShaderResourceView("normalMapSRV", quadEntity->GetMaterial()->GetNormalSRV());
+	tessPixelShader->SetSamplerState("basicSampler", quadEntity->GetMaterial()->GetMaterialSampler());
+
+	tessPixelShader->CopyAllBufferData();
+	tessPixelShader->SetShader();
+
+	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
+	context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+	context->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+
+	context->DrawIndexed(quadEntity->GetMesh()->GetIndexCount(), 0, 0);
 
 	context->RSSetState(NULL);
 
-	render.RenderSkyBox(cubeMesh, vertexBuffer, indexBuffer, skyVertexShader, skyPixelShader, camera, context, skyRasterizerState, skyDepthState, skySRV);
+	//render.RenderSkyBox(cubeMesh, vertexBuffer, indexBuffer, skyVertexShader, skyPixelShader, camera, context, skyRasterizerState, skyDepthState, skySRV);
 
 	swapChain->Present(0, 0);
 }

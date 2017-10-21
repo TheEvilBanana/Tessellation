@@ -151,28 +151,28 @@ float4 main(VertexToPixel input) : SV_TARGET
 	//Ambient light
 	float4 ambient = surfaceColor * ambientLight.ambientColor;
 
-	//Point light
-	//point light 1
-	ComputePointLight(input, pointLight1, surfaceColor, D, S);
-	diffuse += D;
-	specular += S;
-	//point light 2
-	ComputePointLight(input, pointLight2, surfaceColor, D, S);
-	diffuse += D;
-	specular += S;
-	//point light 3
-	ComputePointLight(input, pointLight3, surfaceColor, D, S);
-	diffuse += D;
-	specular += S;
-	//point light 4
-	ComputePointLight(input, pointLight4, surfaceColor, D, S);
-	diffuse += D;
-	specular += S;
+	////Point light
+	////point light 1
+	//ComputePointLight(input, pointLight1, surfaceColor, D, S);
+	//diffuse += D;
+	//specular += S;
+	////point light 2
+	//ComputePointLight(input, pointLight2, surfaceColor, D, S);
+	//diffuse += D;
+	//specular += S;
+	////point light 3
+	//ComputePointLight(input, pointLight3, surfaceColor, D, S);
+	//diffuse += D;
+	//specular += S;
+	////point light 4
+	//ComputePointLight(input, pointLight4, surfaceColor, D, S);
+	//diffuse += D;
+	//specular += S;
 
-	//Spot light
-	ComputeSpotLight(input, spotLight, surfaceColor, D, S);
-	diffuse += D;
-	specular += S;
+	////Spot light
+	//ComputeSpotLight(input, spotLight, surfaceColor, D, S);
+	//diffuse += D;
+	//specular += S;
 	
 	//Total light
 	float4 totalLight = diffuse + specular + ambient;

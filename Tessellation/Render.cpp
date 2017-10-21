@@ -79,12 +79,12 @@ void Render::RenderSkyBox(Mesh* &mesh, ID3D11Buffer* &vertexBuffer, ID3D11Buffer
 
 void Render::SetLights()
 {
-	dirLight_1.SetLightValues(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(10.0f, 0.0f, 0.0f), 0.0f);
-	ambientLight.SetLightValues(XMFLOAT4(0.2f, 0.0f, 0.0f, 1.0f));
-	pointLight1.SetLightValues(XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f), XMFLOAT3(2.0f, 0.0f, 0.0f), 3.0f, XMFLOAT3(1.0f, 0.0f, 1.0f), 0.0f);
-	pointLight2.SetLightValues(XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f), XMFLOAT3(-2.0f, 0.0f, 0.0f), 3.0f, XMFLOAT3(1.0f, 0.0f, 1.0f), 0.0f);
-	pointLight3.SetLightValues(XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 2.0f), 3.0f, XMFLOAT3(1.0f, 0.0f, 1.0f), 0.0f);
-	pointLight4.SetLightValues(XMFLOAT4(0.6f, 0.0f, 0.4f, 1.0f), XMFLOAT3(0.0f, 0.0f, -2.0f), 3.0f, XMFLOAT3(1.0f, 0.0f, 1.0f), 0.0f);
+	dirLight_1.SetLightValues(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, -10.0f, 0.0f), 0.0f);
+	ambientLight.SetLightValues(XMFLOAT4(0.0f, 0.0f, 0.1f, 1.0f));
+	pointLight1.SetLightValues(XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f), XMFLOAT3(2.0f, 0.0f, 0.0f), 3.0f, XMFLOAT3(1.0f, 1.0f, 2.0f), 0.0f);
+	pointLight2.SetLightValues(XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f), XMFLOAT3(-2.0f, 0.0f, 0.0f), 3.0f, XMFLOAT3(1.0f, 1.0f, 2.0f), 0.0f);
+	pointLight3.SetLightValues(XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 2.0f), 3.0f, XMFLOAT3(1.0f, 1.0f, 2.0f), 0.0f);
+	pointLight4.SetLightValues(XMFLOAT4(0.6f, 0.0f, 0.4f, 1.0f), XMFLOAT3(0.0f, 0.0f, -2.0f), 3.0f, XMFLOAT3(1.0f, 1.0f, 2.0f), 0.0f);
 	spotLight.SetLightValues(XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 0.0f), 10.0f, XMFLOAT3(0.0f, -1.0f, 0.0f), 5.0f, XMFLOAT3(0.0f, 1.0f, 0.0f), 0.0f);
 	
 }

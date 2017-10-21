@@ -8,6 +8,7 @@
 #include "Material.h"
 #include "GameEntity.h"
 #include "Render.h"
+#include "Lights.h"
 
 using namespace DirectX;
 
@@ -54,6 +55,15 @@ private:
 	SimplePixelShader* skyPixelShader;
 	SimpleVertexShader* shadowVertexShader;
 
+	//Tesselation
+	SimpleVertexShader* tessVertexShader;
+	SimpleHullShader* tessHullShader;
+	SimpleDomainShader* tessDomainShader;
+	SimplePixelShader* tessPixelShader;
+
+	//Lights
+	DirectionalLight dirLight_1;
+	AmbientLight ambientLight;
 	// Sampler for wrapping textures
 	ID3D11SamplerState* sampler;
 
@@ -78,6 +88,7 @@ private:
 	//Mesh Class
 	Mesh* sphereMesh;
 	Mesh* cubeMesh;
+	Mesh* quadMesh;
 
 	//Material Class
 	Material* materialEarth;
@@ -90,6 +101,7 @@ private:
 
 	//Game Entity Class
 	GameEntity* skyBoxEntity;
+	GameEntity* quadEntity;
 	std::vector<GameEntity*> sphereEntities;
 	std::vector<GameEntity*> flatEntities;
 
