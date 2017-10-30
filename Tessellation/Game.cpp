@@ -52,8 +52,9 @@ Game::~Game()
 	delete materialRed;
 	delete materialYellow;
 	delete materialSkyBox;
-	delete materialSnowTracks;
+	delete materialSnowRough;
 	delete materialEmpty;
+	delete materialStoneWall;
 
 	delete skyBoxEntity;
 	delete quadEntity;
@@ -74,8 +75,13 @@ Game::~Game()
 	plainRedSRV->Release();
 	plainYellowSRV->Release();
 	plainNormalMapSRV->Release();
-	snowTracksSRV->Release();
-	snowTracksNormalSRV->Release();
+	snowRoughSRV->Release();
+	snowRoughNormalSRV->Release();
+	snowRoughHeightSRV->Release();
+
+	stoneWallSRV->Release();
+	stoneWallNormalSRV->Release();
+	stoneWallHeightSRV->Release();
 
 	skySRV->Release();
 	
@@ -100,7 +106,7 @@ void Game::Init()
 	D3D11_RASTERIZER_DESC rasterizerDesc;
 	ZeroMemory(&rasterizerDesc, sizeof(rasterizerDesc));
 	rasterizerDesc.CullMode = D3D11_CULL_BACK;
-	rasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
+	rasterizerDesc.FillMode = D3D11_FILL_SOLID;
 	rasterizerDesc.DepthClipEnable = false;
 
 	device->CreateRasterizerState(&rasterizerDesc, &rasterizer);
@@ -193,8 +199,14 @@ void Game::LoadTextures()
 	CreateWICTextureFromFile(device, context, L"Textures/red.jpg", 0, &plainRedSRV);
 	CreateWICTextureFromFile(device, context, L"Textures/yellow.jpg", 0, &plainYellowSRV);
 	CreateWICTextureFromFile(device, context, L"Textures/plainNormal.png", 0, &plainNormalMapSRV);
-	CreateWICTextureFromFile(device, context, L"Textures/snowTracks.tif", 0, &snowTracksSRV);
-	CreateWICTextureFromFile(device, context, L"Textures/snowTracksNormal.tif", 0, &snowTracksNormalSRV);
+
+	CreateWICTextureFromFile(device, context, L"Textures/snowRough.tif", 0, &snowRoughSRV);
+	CreateWICTextureFromFile(device, context, L"Textures/snowRoughNormal.tif", 0, &snowRoughNormalSRV);
+	CreateWICTextureFromFile(device, context, L"Textures/snowRoughHeight.tif", 0, &snowRoughHeightSRV);
+
+	CreateWICTextureFromFile(device, context, L"Textures/stoneWall.tif", 0, &stoneWallSRV);
+	CreateWICTextureFromFile(device, context, L"Textures/stoneWallNormal.tif", 0, &stoneWallNormalSRV);
+	CreateWICTextureFromFile(device, context, L"Textures/stoneWallHeight.tif", 0, &stoneWallHeightSRV);
 }
 
 void Game::MaterialsInitialize()
@@ -214,8 +226,9 @@ void Game::MaterialsInitialize()
 	materialCobbleStone = new Material(basePixelShader, baseVertexShader, cobbleStoneSRV, cobbleStoneNormalSRV, sampler);
 	materialRed = new Material(basePixelShader, baseVertexShader, plainRedSRV, plainNormalMapSRV, sampler);
 	materialYellow = new Material(basePixelShader, baseVertexShader, plainYellowSRV, plainNormalMapSRV, sampler);
-	materialSnowTracks = new Material(basePixelShader, baseVertexShader, snowTracksSRV, snowTracksNormalSRV, sampler);
+	materialSnowRough = new Material(basePixelShader, baseVertexShader, snowRoughSRV, snowRoughNormalSRV, sampler);
 	materialEmpty = new Material(basePixelShader, baseVertexShader, 0, plainNormalMapSRV, sampler);
+	materialStoneWall = new Material(basePixelShader, baseVertexShader, stoneWallSRV, stoneWallNormalSRV, sampler);
 
 	materialSkyBox = new Material(skyPixelShader, skyVertexShader, skySRV, plainNormalMapSRV, sampler);
 	
@@ -297,9 +310,9 @@ void Game::GameEntityInitialize()
 	flatEntities[2]->SetRotation(1.6f, 0, 0);
 	flatEntities[3]->SetRotation(0, 0, 1.6f);
 
-	quadEntity = new GameEntity(quadMesh, materialCobbleStone);
+	quadEntity = new GameEntity(quadMesh, materialSnowRough);
 	quadEntity->SetPosition(0.0f, 0.0f, 0.0f);
-	quadEntity->SetRotation(-0.8f, 0, 0);
+	quadEntity->SetRotation(0.0f, 0.0f, 0.0f);
 }
 
 void Game::OnResize()
@@ -385,6 +398,9 @@ void Game::Draw(float deltaTime, float totalTime)
 	tessDomainShader->SetMatrix4x4("view", camera->GetView());
 	tessDomainShader->SetMatrix4x4("projection", camera->GetProjection());
 	
+	tessDomainShader->SetShaderResourceView("heightSRV", snowRoughHeightSRV);
+	tessDomainShader->SetSamplerState("basicSampler", quadEntity->GetMaterial()->GetMaterialSampler());
+
 	tessDomainShader->CopyAllBufferData();
 	tessDomainShader->SetShader();
 	
@@ -406,7 +422,10 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	context->RSSetState(NULL);
 
-	//render.RenderSkyBox(cubeMesh, vertexBuffer, indexBuffer, skyVertexShader, skyPixelShader, camera, context, skyRasterizerState, skyDepthState, skySRV);
+	context->HSSetShader(0, 0, 0);
+	context->DSSetShader(0, 0, 0);
+
+	render.RenderSkyBox(cubeMesh, vertexBuffer, indexBuffer, skyVertexShader, skyPixelShader, camera, context, skyRasterizerState, skyDepthState, skySRV);
 
 	swapChain->Present(0, 0);
 }
