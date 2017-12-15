@@ -66,6 +66,7 @@ private:
 	AmbientLight ambientLight;
 	// Sampler for wrapping textures
 	ID3D11SamplerState* sampler;
+	ID3D11SamplerState* heightSampler;
 
 	//Texture Shader Resource Views(SRVs)
 	ID3D11ShaderResourceView* earthDayMapSRV;
@@ -109,6 +110,7 @@ private:
 	//Game Entity Class
 	GameEntity* skyBoxEntity;
 	GameEntity* quadEntity;
+	GameEntity* quadEntity1;
 	std::vector<GameEntity*> sphereEntities;
 	std::vector<GameEntity*> flatEntities;
 

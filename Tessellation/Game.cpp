@@ -58,6 +58,7 @@ Game::~Game()
 
 	delete skyBoxEntity;
 	delete quadEntity;
+	delete quadEntity1;
 	for(auto& se: sphereEntities) delete se;
 	for (auto& fe : flatEntities) delete fe;
 
@@ -67,7 +68,8 @@ Game::~Game()
 	skyRasterizerState->Release();
 
 	sampler->Release();
-	
+	heightSampler->Release();
+
 	earthDayMapSRV->Release();
 	earthNormalMapSRV->Release();
 	cobbleStoneSRV->Release();
@@ -221,6 +223,22 @@ void Game::MaterialsInitialize()
 
 	device->CreateSamplerState(&samplerDesc, &sampler);
 
+	D3D11_SAMPLER_DESC heightSamplerDesc = {};
+	heightSamplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+	heightSamplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+	heightSamplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+	heightSamplerDesc.BorderColor[0] = 0;
+	heightSamplerDesc.BorderColor[1] = 0;
+	heightSamplerDesc.BorderColor[2] = 0;
+	heightSamplerDesc.BorderColor[3] = 0;
+	heightSamplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+	heightSamplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	heightSamplerDesc.MaxAnisotropy = 16;
+	heightSamplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+	heightSamplerDesc.MinLOD = 0.0f;
+	heightSamplerDesc.MipLODBias = 0.0f;
+
+	device->CreateSamplerState(&heightSamplerDesc, &heightSampler);
 
 	materialEarth = new Material(basePixelShader, baseVertexShader, earthDayMapSRV, earthNormalMapSRV, sampler);
 	materialCobbleStone = new Material(basePixelShader, baseVertexShader, cobbleStoneSRV, cobbleStoneNormalSRV, sampler);
@@ -310,9 +328,15 @@ void Game::GameEntityInitialize()
 	flatEntities[2]->SetRotation(1.6f, 0, 0);
 	flatEntities[3]->SetRotation(0, 0, 1.6f);
 
-	quadEntity = new GameEntity(quadMesh, materialSnowRough);
-	quadEntity->SetPosition(0.0f, 0.0f, 0.0f);
+	quadEntity = new GameEntity(quadMesh, materialStoneWall);
+	quadEntity->SetPosition(1.0f, 0.0f, 0.0f);
 	quadEntity->SetRotation(0.0f, 0.0f, 0.0f);
+	quadEntity->SetScale(0.5f, 1.0f, 0.5f);
+
+	quadEntity1 = new GameEntity(quadMesh, materialSnowRough);
+	quadEntity1->SetPosition(-1.0f, 0.0f, 0.0f);
+	quadEntity1->SetRotation(0.0f, 0.0f, 0.0f);
+	quadEntity1->SetScale(0.5f, 1.0f, 0.5f);
 }
 
 void Game::OnResize()
@@ -343,6 +367,7 @@ void Game::Update(float deltaTime, float totalTime)
 	//}
 
 	quadEntity->UpdateWorldMatrix();
+	quadEntity1->UpdateWorldMatrix();
 
 	if (GetAsyncKeyState(VK_ESCAPE))
 		Quit();
@@ -398,8 +423,8 @@ void Game::Draw(float deltaTime, float totalTime)
 	tessDomainShader->SetMatrix4x4("view", camera->GetView());
 	tessDomainShader->SetMatrix4x4("projection", camera->GetProjection());
 	
-	tessDomainShader->SetShaderResourceView("heightSRV", snowRoughHeightSRV);
-	tessDomainShader->SetSamplerState("basicSampler", quadEntity->GetMaterial()->GetMaterialSampler());
+	tessDomainShader->SetShaderResourceView("heightSRV", stoneWallHeightSRV);
+	tessDomainShader->SetSamplerState("heightSampler", sampler);
 
 	tessDomainShader->CopyAllBufferData();
 	tessDomainShader->SetShader();
@@ -419,6 +444,46 @@ void Game::Draw(float deltaTime, float totalTime)
 	context->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
 	context->DrawIndexed(quadEntity->GetMesh()->GetIndexCount(), 0, 0);
+
+	//-----------------------------
+
+	vertexBuffer = quadEntity1->GetMesh()->GetVertexBuffer();
+	indexBuffer = quadEntity1->GetMesh()->GetIndexBuffer();
+
+	tessVertexShader->SetMatrix4x4("world", *quadEntity1->GetWorldMatrix());
+
+	tessVertexShader->CopyAllBufferData();
+	tessVertexShader->SetShader();
+
+	tessHullShader->CopyAllBufferData();
+	tessHullShader->SetShader();
+
+	tessDomainShader->SetMatrix4x4("view", camera->GetView());
+	tessDomainShader->SetMatrix4x4("projection", camera->GetProjection());
+
+	tessDomainShader->SetShaderResourceView("heightSRV", snowRoughHeightSRV);
+	tessDomainShader->SetSamplerState("heightSampler", sampler);
+
+	tessDomainShader->CopyAllBufferData();
+	tessDomainShader->SetShader();
+
+	tessPixelShader->SetData("dirLight_1", &dirLight_1, sizeof(DirectionalLight));
+	tessPixelShader->SetFloat3("cameraPosition", camera->GetPosition());
+
+	tessPixelShader->SetShaderResourceView("textureSRV", quadEntity1->GetMaterial()->GetMaterialSRV());
+	tessPixelShader->SetShaderResourceView("normalMapSRV", quadEntity1->GetMaterial()->GetNormalSRV());
+	tessPixelShader->SetSamplerState("basicSampler", quadEntity1->GetMaterial()->GetMaterialSampler());
+
+	tessPixelShader->CopyAllBufferData();
+	tessPixelShader->SetShader();
+
+	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
+	context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+	context->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+
+	context->DrawIndexed(quadEntity1->GetMesh()->GetIndexCount(), 0, 0);
+
+	//----------------------------
 
 	context->RSSetState(NULL);
 

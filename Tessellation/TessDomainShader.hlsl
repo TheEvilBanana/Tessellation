@@ -7,7 +7,7 @@ cbuffer externalData : register(b0)
 
 Texture2D heightSRV : register(t0);
 
-SamplerState basicSampler : register(s0);
+SamplerState heightSampler : register(s0);
 
 struct DomainOut
 {
@@ -58,10 +58,10 @@ DomainOut main(
 	float hMap = heightSRV.SampleLevel(basicSampler, Output.uv, 0).r;
 	Output.worldPos += ((hScale * (hMap - 1.0f)) * Output.normal);*/
 
-	float hScale = 0.2f;
+	float hScale = 0.3f;
 	float hBias = 0.0f;
-	float3 vDir = -Output.normal;
-	float hMap = heightSRV.SampleLevel(basicSampler, Output.uv, 0).r;
+	float3 vDir = Output.normal;
+	float hMap = heightSRV.SampleLevel(heightSampler, Output.uv.xy, 0).r;
 	hMap *= hScale;
 	hMap += hBias;
 	Output.worldPos += hMap * vDir;

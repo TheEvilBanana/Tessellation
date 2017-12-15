@@ -35,10 +35,10 @@ HS_CONSTANT_DATA_OUTPUT CalcHSPatchConstants(
 	HS_CONSTANT_DATA_OUTPUT Output;
 
 	// Insert code to compute Output here
-	Output.EdgeTessFactor[0] = 20;
-	Output.EdgeTessFactor[1] = 20;
-	Output.EdgeTessFactor[2] = 20;
-	Output.InsideTessFactor = 20; // e.g. could calculate dynamic tessellation factors instead
+	Output.EdgeTessFactor[0] = 50;
+	Output.EdgeTessFactor[1] = 50;
+	Output.EdgeTessFactor[2] = 50;
+	Output.InsideTessFactor = 50; // e.g. could calculate dynamic tessellation factors instead
 
 	return Output;
 }
