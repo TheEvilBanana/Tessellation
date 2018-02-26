@@ -1,3 +1,5 @@
+
+
 #include "Game.h"
 
 #include "WICTextureLoader.h"
@@ -5,6 +7,10 @@
 
 #define max(a,b) (((a) > (b)) ? (a):(b))
 #define min(a,b) (((a) < (b)) ? (a):(b))
+
+bool show_demo_window = true;
+bool show_another_window = false;
+ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 Game::Game(HINSTANCE hInstance)
 	: DXCore(
@@ -21,6 +27,7 @@ Game::Game(HINSTANCE hInstance)
 	basePixelShader = 0;
 	camera = 0;
 	
+
 
 #if defined(DEBUG) || defined(_DEBUG)
 	// Do we want a console window?  Probably only in debug mode
@@ -142,6 +149,13 @@ void Game::Init()
 	// geometric primitives (points, lines or triangles) we want to draw.  
 	// Essentially: "What kind of shape should the GPU draw with our data?"
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	// Setup ImGui binding
+	ImGui_ImplDX11_Init(hWnd, device, context);
+
+	// Setup style
+	ImGui::StyleColorsClassic();
+	
 }
 
 void Game::CameraInitialize()
@@ -491,7 +505,24 @@ void Game::Draw(float deltaTime, float totalTime)
 	context->DSSetShader(0, 0, 0);
 
 	render.RenderSkyBox(cubeMesh, vertexBuffer, indexBuffer, skyVertexShader, skyPixelShader, camera, context, skyRasterizerState, skyDepthState, skySRV);
+	//-----
 
+	//----IMGUI-----
+	ImGui_ImplDX11_NewFrame();
+	{
+		static float f = 0.0f;
+		ImGui::Text("Tesselation");                           // Some text (you can use a format string too)
+		ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float as a slider from 0.0f to 1.0f
+		ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats as a color
+		if (ImGui::Button("Demo Window"))                       // Use buttons to toggle our bools. We could use Checkbox() as well.
+			show_demo_window ^= 1;
+		if (ImGui::Button("Another Window"))
+			show_another_window ^= 1;
+		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+	}
+
+	ImGui::Render();
+	//---------
 	swapChain->Present(0, 0);
 }
 

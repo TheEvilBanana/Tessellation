@@ -1,3 +1,5 @@
+
+
 #include "DXCore.h"
 
 #include <WindowsX.h>
@@ -355,6 +357,16 @@ HRESULT DXCore::Run()
 
 	// Our overall game and message loop
 	MSG msg = {};
+
+	//// Setup ImGui binding
+	//ImGui_ImplDX11_Init(hWnd, device, context);
+
+	//// Setup style
+	//ImGui::StyleColorsClassic();
+	//bool show_demo_window = true;
+	//bool show_another_window = false;
+	//ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
 	while (msg.message != WM_QUIT)
 	{
 		// Determine if there is a message waiting
@@ -371,13 +383,27 @@ HRESULT DXCore::Run()
 			UpdateTimer();
 			if (titleBarStats)
 				UpdateTitleBarStats();
-
+			////----IMGUI-----
+			//ImGui_ImplDX11_NewFrame();
+			//{
+			//	static float f = 0.0f;
+			//	ImGui::Text("Hello, world!");                           // Some text (you can use a format string too)
+			//	ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float as a slider from 0.0f to 1.0f
+			//	ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats as a color
+			//	if (ImGui::Button("Demo Window"))                       // Use buttons to toggle our bools. We could use Checkbox() as well.
+			//		show_demo_window ^= 1;
+			//	if (ImGui::Button("Another Window"))
+			//		show_another_window ^= 1;
+			//	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+			//}
+			//ImGui::Render();
+			////---------
 			// The game loop
 			Update(deltaTime, totalTime);
 			Draw(deltaTime, totalTime);
 		}
 	}
-
+	ImGui_ImplDX11_Shutdown();
 	// We'll end up here once we get a WM_QUIT message,
 	// which usually comes from the user closing the window
 	return msg.wParam;
@@ -506,7 +532,7 @@ void DXCore::CreateConsoleWindow(int bufferLines, int bufferColumns, int windowL
 
 
 
-
+extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 // --------------------------------------------------------
 // Handles messages that are sent to our window by the
 // operating system.  Ignoring these messages would cause
@@ -515,6 +541,8 @@ void DXCore::CreateConsoleWindow(int bufferLines, int bufferColumns, int windowL
 // --------------------------------------------------------
 LRESULT DXCore::ProcessMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+	if (ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam))
+		return true;
 	// Check the incoming message and handle any we care about
 	switch (uMsg)
 	{
@@ -542,7 +570,12 @@ LRESULT DXCore::ProcessMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		// If DX is initialized, resize 
 		// our required buffers
 		if (device)
+		{
+			ImGui_ImplDX11_InvalidateDeviceObjects();
 			OnResize();
+			ImGui_ImplDX11_CreateDeviceObjects();
+		}
+			
 
 		return 0;
 
