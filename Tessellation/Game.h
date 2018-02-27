@@ -46,7 +46,9 @@ private:
 	ID3D11Buffer* vertexBuffer;
 	ID3D11Buffer* indexBuffer;
 
-	ID3D11RasterizerState* rasterizer;
+	ID3D11RasterizerState* rasterizer_Wireframe;
+	ID3D11RasterizerState* rasterizer_Solid;
+	int rasterizer_state;
 
 	//Declare shader variables
 	SimpleVertexShader* baseVertexShader;
@@ -60,6 +62,7 @@ private:
 	SimpleHullShader* tessHullShader;
 	SimpleDomainShader* tessDomainShader;
 	SimplePixelShader* tessPixelShader;
+	float tess_factor;
 
 	//Lights
 	DirectionalLight dirLight_1;

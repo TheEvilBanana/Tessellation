@@ -69,7 +69,8 @@ Game::~Game()
 	for(auto& se: sphereEntities) delete se;
 	for (auto& fe : flatEntities) delete fe;
 
-	rasterizer->Release();
+	rasterizer_Wireframe->Release();
+	rasterizer_Solid->Release();
 
 	skyDepthState->Release();
 	skyRasterizerState->Release();
@@ -112,13 +113,24 @@ void Game::Init()
 
 
 	//Setup rasterizer state 
-	D3D11_RASTERIZER_DESC rasterizerDesc;
-	ZeroMemory(&rasterizerDesc, sizeof(rasterizerDesc));
-	rasterizerDesc.CullMode = D3D11_CULL_BACK;
-	rasterizerDesc.FillMode = D3D11_FILL_SOLID;
-	rasterizerDesc.DepthClipEnable = false;
+	//wireframe
+	D3D11_RASTERIZER_DESC rasterizerDesc_Wireframe;
+	ZeroMemory(&rasterizerDesc_Wireframe, sizeof(rasterizerDesc_Wireframe));
+	rasterizerDesc_Wireframe.CullMode = D3D11_CULL_NONE;
+	rasterizerDesc_Wireframe.FillMode = D3D11_FILL_WIREFRAME;
+	rasterizerDesc_Wireframe.DepthClipEnable = false;
 
-	device->CreateRasterizerState(&rasterizerDesc, &rasterizer);
+	//Solid
+	D3D11_RASTERIZER_DESC rasterizerDesc_Solid;
+	ZeroMemory(&rasterizerDesc_Solid, sizeof(rasterizerDesc_Solid));
+	rasterizerDesc_Solid.CullMode = D3D11_CULL_NONE;
+	rasterizerDesc_Solid.FillMode = D3D11_FILL_SOLID;
+	rasterizerDesc_Solid.DepthClipEnable = false;
+
+	device->CreateRasterizerState(&rasterizerDesc_Wireframe, &rasterizer_Wireframe);
+	device->CreateRasterizerState(&rasterizerDesc_Solid, &rasterizer_Solid);
+
+	rasterizer_state = 0;
 
 	//Setup blend state 
 	D3D11_BLEND_DESC blendDesc;
@@ -204,6 +216,8 @@ void Game::ModelsInitialize()
 	sphereMesh = new Mesh("Models/sphere.obj", device);
 	cubeMesh = new Mesh("Models/cube.obj", device);
 	quadMesh = new Mesh("Models/quad.obj", device);
+
+	tess_factor = 10.0f;
 }
 
 void Game::LoadTextures()
@@ -398,7 +412,12 @@ void Game::Draw(float deltaTime, float totalTime)
 	context->ClearRenderTargetView(backBufferRTV, color);
 	context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-	context->RSSetState(rasterizer);
+	if (rasterizer_state == 0) {
+		context->RSSetState(rasterizer_Solid);
+	} else if (rasterizer_state == 1) {
+		context->RSSetState(rasterizer_Wireframe);
+	}
+	
 
 	////Render Spheres
 	//for (int i = 0; i <= 8 ; i++) 
@@ -430,6 +449,8 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	tessVertexShader->CopyAllBufferData();
 	tessVertexShader->SetShader();
+
+	tessHullShader->SetFloat("tess_factor", tess_factor);
 
 	tessHullShader->CopyAllBufferData();
 	tessHullShader->SetShader();
@@ -469,6 +490,8 @@ void Game::Draw(float deltaTime, float totalTime)
 	tessVertexShader->CopyAllBufferData();
 	tessVertexShader->SetShader();
 
+	tessHullShader->SetFloat("tess_factor", tess_factor);
+
 	tessHullShader->CopyAllBufferData();
 	tessHullShader->SetShader();
 
@@ -499,25 +522,31 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	//----------------------------
 
-	context->RSSetState(NULL);
+	//context->RSSetState(rasterizer_Solid);
 
 	context->HSSetShader(0, 0, 0);
 	context->DSSetShader(0, 0, 0);
 
 	render.RenderSkyBox(cubeMesh, vertexBuffer, indexBuffer, skyVertexShader, skyPixelShader, camera, context, skyRasterizerState, skyDepthState, skySRV);
+	
+	context->RSSetState(NULL);
 	//-----
 
 	//----IMGUI-----
 	ImGui_ImplDX11_NewFrame();
 	{
-		static float f = 0.0f;
+		static float f = 50.0f;
 		ImGui::Text("Tesselation");                           // Some text (you can use a format string too)
-		ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float as a slider from 0.0f to 1.0f
-		ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats as a color
-		if (ImGui::Button("Demo Window"))                       // Use buttons to toggle our bools. We could use Checkbox() as well.
-			show_demo_window ^= 1;
-		if (ImGui::Button("Another Window"))
-			show_another_window ^= 1;
+		ImGui::SliderFloat("float", &tess_factor, 0.0f, 100.0f);            // Edit 1 float as a slider from 0.0f to 1.0f
+		//ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats as a color
+
+		ImGui::Text("Rasterizer State");
+		ImGui::RadioButton("Solid", &rasterizer_state, 0); 
+		ImGui::RadioButton("Wireframe", &rasterizer_state, 1);
+		//if (ImGui::Button("Demo Window"))                       // Use buttons to toggle our bools. We could use Checkbox() as well.
+		//	show_demo_window ^= 1;
+		//if (ImGui::Button("Another Window"))
+		//	show_another_window ^= 1;
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 	}
 
@@ -566,8 +595,8 @@ void Game::OnMouseUp(WPARAM buttonState, int x, int y)
 // --------------------------------------------------------
 void Game::OnMouseMove(WPARAM buttonState, int x, int y)
 {
-	// Check left mouse button
-	if (buttonState & 0x0001) {
+	// Check right mouse button
+	if (buttonState & 0x0002) {
 		float xDiff = (x - prevMousePos.x) * 0.005f;
 		float yDiff = (y - prevMousePos.y) * 0.005f;
 		camera->Rotate(yDiff, xDiff);

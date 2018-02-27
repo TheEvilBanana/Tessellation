@@ -1,3 +1,7 @@
+cbuffer externalData : register(b0)
+{
+	float tess_factor;
+}
 // Input control point
 struct VertexOut
 {
@@ -35,10 +39,10 @@ HS_CONSTANT_DATA_OUTPUT CalcHSPatchConstants(
 	HS_CONSTANT_DATA_OUTPUT Output;
 
 	// Insert code to compute Output here
-	Output.EdgeTessFactor[0] = 50;
-	Output.EdgeTessFactor[1] = 50;
-	Output.EdgeTessFactor[2] = 50;
-	Output.InsideTessFactor = 50; // e.g. could calculate dynamic tessellation factors instead
+	Output.EdgeTessFactor[0] = tess_factor;
+	Output.EdgeTessFactor[1] = tess_factor;
+	Output.EdgeTessFactor[2] = tess_factor;
+	Output.InsideTessFactor = tess_factor; // e.g. could calculate dynamic tessellation factors instead
 
 	return Output;
 }
